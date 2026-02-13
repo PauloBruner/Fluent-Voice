@@ -43,7 +43,7 @@ listenBtn.addEventListener("click", async () => {
   if (toLang === "pt") {
     try {
       const response = await fetch(
-        "https://SEU-BACKEND.onrender.com/api/fluentvoice/tts",
+        "https://fluentvoice-backend.onrender.com/api/fluentvoice/tts",
         {
           method: "POST",
           headers: {
