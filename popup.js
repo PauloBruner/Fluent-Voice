@@ -33,18 +33,51 @@ translateBtn.addEventListener("click", async () => {
   }
 });
 
-listenBtn.addEventListener("click", () => {
+listenBtn.addEventListener("click", async () => {
   const text = document.getElementById("text").value.trim();
   const toLang = document.getElementById("toLang").value;
 
   if (!text) return;
 
-  const utterance = new SpeechSynthesisUtterance(text);
+  // Se for português brasileiro, usa voz neural
+  if (toLang === "pt") {
+    try {
+      const response = await fetch(
+        "https://SEU-BACKEND.onrender.com/api/fluentvoice/tts",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ text })
+        }
+      );
 
-  if (toLang === "pt") utterance.lang = "pt-BR";
-  if (toLang === "en") utterance.lang = "en-US";
-  if (toLang === "es") utterance.lang = "es-ES";
+      const data = await response.json();
 
-  speechSynthesis.cancel();
-  speechSynthesis.speak(utterance);
+      if (!data.audio) {
+        alert("Voice generation failed.");
+        return;
+      }
+
+      const audio = new Audio(
+        "data:audio/mp3;base64," + data.audio
+      );
+      audio.play();
+
+    } catch {
+      alert("Premium voice service unavailable.");
+    }
+
+  } else {
+    // Outros idiomas continuam usando Web Speech
+    const utterance = new SpeechSynthesisUtterance(text);
+
+    if (toLang === "en") utterance.lang = "en-US";
+    if (toLang === "es") utterance.lang = "es-ES";
+
+    speechSynthesis.cancel();
+    speechSynthesis.speak(utterance);
+  }
 });
+
