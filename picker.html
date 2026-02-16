@@ -1,46 +1,56 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <link rel="stylesheet" href="picker.css">
+  <meta charset="UTF-8" />
+  <title>FluentVoice</title>
+  <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
 
   <div class="container">
 
-    <div class="fv-header">
+    <div class="header">
       FluentVoice
-      <button id="fv-close">✕</button>
+      <button id="closeBtn">✕</button>
     </div>
 
-    <textarea id="text" placeholder="Select text or type..."></textarea>
+    <textarea id="textInput" placeholder="Type or paste text..."></textarea>
 
-    <div class="selectors">
-      <select id="fromLang">
-        <option value="en">English</option>
-        <option value="pt">Portuguese (Brazil)</option>
-        <option value="es">Spanish</option>
-      </select>
+    <div class="fv-selectors">
+
+      <div class="dropdown" data-target="fromLang">
+        <div class="dropdown-selected">English</div>
+        <div class="dropdown-list">
+          <div class="dropdown-item" data-value="en">English</div>
+          <div class="dropdown-item" data-value="pt">Portuguese (Brazil)</div>
+          <div class="dropdown-item" data-value="es">Spanish</div>
+        </div>
+      </div>
 
       <button id="swapBtn">⇄</button>
 
-      <select id="toLang">
-        <option value="pt">Portuguese (Brazil)</option>
-        <option value="en">English</option>
-        <option value="es">Spanish</option>
-      </select>
+      <div class="dropdown" data-target="toLang">
+        <div class="dropdown-selected">Portuguese (Brazil)</div>
+        <div class="dropdown-list">
+          <div class="dropdown-item" data-value="pt">Portuguese (Brazil)</div>
+          <div class="dropdown-item" data-value="en">English</div>
+          <div class="dropdown-item" data-value="es">Spanish</div>
+        </div>
+      </div>
+
     </div>
 
-    <button id="translateBtn" class="primary">Translate</button>
-    <button id="listenBtn" class="secondary">Listen</button>
+    <button class="primary" id="translateBtn">Translate</button>
+    <button class="secondary" id="listenBtn">Listen</button>
 
-    <div class="fv-footer">
+    <div class="footer">
       <a href="https://SEU-SITE.com/privacy.html" target="_blank">
         Privacy Policy
       </a>
     </div>
+
   </div>
 
-  <script src="picker.js"></script>
+  <script src="popup.js"></script>
 </body>
 </html>

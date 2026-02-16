@@ -1,14 +1,13 @@
-if (!window.fvInitialized) {
+if (!window.fluentVoiceInjected) {
 
-window.fvInitialized = true;
-window.fvPanel = null;
-}
+window.fluentVoiceInjected = true;
+let panel = null;
 
 chrome.runtime.onMessage.addListener((request) => {
   if (request.toggleFluentVoice) {
-    if (fvPanel) {
-      fvPanel.remove();
-      fvPanel = null;
+    if (panel) {
+      panel.remove();
+      panel = null;
     } else {
       createPanel();
     }
@@ -17,37 +16,46 @@ chrome.runtime.onMessage.addListener((request) => {
 
 function createPanel() {
 
-  fvPanel = document.createElement("div");
-  fvPanel.id = "fluentvoice-panel";
+  panel = document.createElement("div");
+  panel.id = "fluentvoice-panel";
 
-  fvPanel.innerHTML = `
+  panel.innerHTML = `
     <div class="fv-header">
-      <span>FluentVoice</span>
+      FluentVoice
       <button id="fv-close">✕</button>
     </div>
 
-    <textarea id="fv-text" placeholder="Select text or type..."></textarea>
+    <textarea id="fv-text" placeholder="Type or paste text..."></textarea>
 
     <div class="fv-selectors">
-      <select id="fv-from">
-        <option value="en">English</option>
-        <option value="pt">Portuguese (Brazil)</option>
-        <option value="es">Spanish</option>
-      </select>
+
+      <div class="dropdown" data-target="fromLang">
+        <div class="dropdown-selected">English</div>
+        <div class="dropdown-list">
+          <div class="dropdown-item" data-value="en">English</div>
+          <div class="dropdown-item" data-value="pt">Portuguese (Brazil)</div>
+          <div class="dropdown-item" data-value="es">Spanish</div>
+        </div>
+      </div>
 
       <button id="fv-swap">⇄</button>
 
-      <select id="fv-to">
-        <option value="pt">Portuguese (Brazil)</option>
-        <option value="en">English</option>
-        <option value="es">Spanish</option>
-      </select>
+      <div class="dropdown" data-target="toLang">
+        <div class="dropdown-selected">Portuguese (Brazil)</div>
+        <div class="dropdown-list">
+          <div class="dropdown-item" data-value="pt">Portuguese (Brazil)</div>
+          <div class="dropdown-item" data-value="en">English</div>
+          <div class="dropdown-item" data-value="es">Spanish</div>
+        </div>
+      </div>
+
     </div>
 
     <div class="fv-buttons">
       <button id="fv-translate" class="primary">Translate</button>
       <button id="fv-listen" class="secondary">Listen</button>
     </div>
+
     <div class="fv-footer">
       <a href="https://SEU-SITE.com/privacy.html" target="_blank">
         Privacy Policy
@@ -55,14 +63,9 @@ function createPanel() {
     </div>
   `;
 
-  document.body.appendChild(fvPanel);
+  document.body.appendChild(panel);
   applyStyles();
   attachEvents();
-
-  const selected = window.getSelection().toString();
-  if (selected) {
-    document.getElementById("fv-text").value = selected;
-  }
 }
 
 function applyStyles() {
@@ -70,48 +73,37 @@ function applyStyles() {
   const style = document.createElement("style");
 
   style.textContent = `
-
     #fluentvoice-panel {
       position: fixed;
-      top: 80px;
+      top: 70px;
       right: 30px;
-      width: 380px;
+      width: 420px;
+      min-height: 520px;
       backdrop-filter: blur(18px);
-      background: rgba(18,18,20,0.85);
-      border-radius: 20px;
-      padding: 22px;
-      box-shadow: 0 25px 60px rgba(0,0,0,0.6);
-      border: 1px solid rgba(255,255,255,0.05);
+      background: rgba(18,18,20,0.95);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 30px 70px rgba(0,0,0,0.65);
       z-index: 999999;
       font-family: "Segoe UI", Arial, sans-serif;
       color: #ffffff;
-      animation: fvFadeIn 0.3s ease;
-    }
-
-    @keyframes fvFadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
     }
 
     .fv-header {
       text-align: center;
       font-weight: 700;
       font-size: 18px;
-      letter-spacing: 0.5px;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
       position: relative;
-      color: #ffffff;
     }
 
     #fv-close {
       position: absolute;
       right: 0;
-      top: 0;
+      background: none;
       border: none;
-      background: transparent;
       color: #888;
       cursor: pointer;
-      font-size: 16px;
     }
 
     #fv-close:hover {
@@ -120,57 +112,69 @@ function applyStyles() {
 
     textarea {
       width: 100%;
-      height: 95px;
-      padding: 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,0.08);
-      background: rgba(255,255,255,0.05);
+      height: 170px;
+      padding: 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.06);
       color: #ffffff;
-      resize: none;
-      margin-bottom: 14px;
-      font-size: 14px;
-      outline: none;
-    }
-
-    textarea::placeholder {
-      color: #aaa;
+      resize: vertical;
+      margin-bottom: 20px;
+      font-size: 15px;
     }
 
     .fv-selectors {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
 
-    .fv-selectors select {
+    .dropdown {
+      position: relative;
       width: 42%;
-      padding: 8px;
-      border-radius: 12px;
-      border: none;
-      background: rgba(255,255,255,0.08);
-      color: #fff;
-      outline: none;
+      cursor: pointer;
+    }
+
+    .dropdown-selected {
+      padding: 10px 14px;
+      border-radius: 14px;
+      background: #2a2a2e;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .dropdown-list {
+      position: absolute;
+      top: 110%;
+      left: 0;
+      width: 100%;
+      background: #1c1c1f;
+      border-radius: 14px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+      overflow: hidden;
+      display: none;
+      z-index: 999;
+    }
+
+    .dropdown.open .dropdown-list {
+      display: block;
+    }
+
+    .dropdown-item {
+      padding: 10px 14px;
+      transition: 0.2s ease;
+    }
+
+    .dropdown-item:hover {
+      background: #ff6a00;
     }
 
     #fv-swap {
       width: 12%;
-      border-radius: 12px;
-      border: none;
+      border-radius: 14px;
       background: rgba(255,255,255,0.1);
       color: #ff6a00;
+      border: none;
       cursor: pointer;
-      font-size: 16px;
-      transition: 0.2s;
-    }
-
-    #fv-swap:hover {
-      background: rgba(255,106,0,0.2);
-    }
-
-    .fv-buttons {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 12px;
     }
 
     .fv-buttons button {
@@ -179,35 +183,21 @@ function applyStyles() {
       border-radius: 14px;
       border: none;
       cursor: pointer;
-      font-weight: 600;
-      font-size: 14px;
-      transition: 0.3s ease;
     }
 
     .primary {
       background: linear-gradient(135deg,#ff6a00,#ff8c1a);
-      color: #fff;
-      box-shadow: 0 0 15px rgba(255,106,0,0.4);
-    }
-
-    .primary:hover {
-      box-shadow: 0 0 25px rgba(255,106,0,0.8);
-      transform: translateY(-2px);
+      color: white;
     }
 
     .secondary {
       background: rgba(255,255,255,0.08);
-      color: #fff;
-    }
-
-    .secondary:hover {
-      background: rgba(255,255,255,0.15);
+      color: white;
     }
 
     .fv-footer {
       text-align: center;
-      font-size: 11px;
-      color: #999;
+      font-size: 12px;
       margin-top: 10px;
     }
 
@@ -215,7 +205,6 @@ function applyStyles() {
       color: #ff6a00;
       text-decoration: none;
     }
-
   `;
 
   document.head.appendChild(style);
@@ -223,43 +212,66 @@ function applyStyles() {
 
 function attachEvents() {
 
-  const textArea = document.getElementById("fv-text");
-  const fromLang = document.getElementById("fv-from");
-  const toLang = document.getElementById("fv-to");
+  let selectedLanguages = { fromLang: "en", toLang: "pt" };
+
+  document.querySelectorAll(".dropdown").forEach(dropdown => {
+
+    const selected = dropdown.querySelector(".dropdown-selected");
+    const target = dropdown.dataset.target;
+
+    selected.addEventListener("click", () => {
+      document.querySelectorAll(".dropdown").forEach(d => d.classList.remove("open"));
+      dropdown.classList.toggle("open");
+    });
+
+    dropdown.querySelectorAll(".dropdown-item").forEach(item => {
+      item.addEventListener("click", () => {
+        selected.textContent = item.textContent;
+        selectedLanguages[target] = item.dataset.value;
+        dropdown.classList.remove("open");
+      });
+    });
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".dropdown")) {
+      document.querySelectorAll(".dropdown").forEach(d => d.classList.remove("open"));
+    }
+  });
 
   document.getElementById("fv-close").onclick = () => {
-    fvPanel.remove();
-    fvPanel = null;
+    panel.remove();
+    panel = null;
   };
 
   document.getElementById("fv-swap").onclick = () => {
-    const temp = fromLang.value;
-    fromLang.value = toLang.value;
-    toLang.value = temp;
+    const temp = selectedLanguages.fromLang;
+    selectedLanguages.fromLang = selectedLanguages.toLang;
+    selectedLanguages.toLang = temp;
   };
 
   document.getElementById("fv-translate").onclick = async () => {
-    const text = textArea.value.trim();
-    if (!text) return;
 
-    if (fromLang.value === toLang.value) return;
+    const text = document.getElementById("fv-text").value.trim();
+    if (!text) return;
 
     const res = await fetch(
       "https://api.mymemory.translated.net/get?q=" +
       encodeURIComponent(text) +
-      "&langpair=" + fromLang.value + "|" + toLang.value
+      "&langpair=" + selectedLanguages.fromLang + "|" + selectedLanguages.toLang
     );
 
     const data = await res.json();
-    textArea.value = data.responseData.translatedText;
+    document.getElementById("fv-text").value =
+      data.responseData.translatedText;
   };
 
   document.getElementById("fv-listen").onclick = async () => {
-    const text = textArea.value.trim();
+
+    const text = document.getElementById("fv-text").value.trim();
     if (!text) return;
 
-    // 🔥 Português usa voz neural backend
-    if (toLang.value === "pt") {
+    if (selectedLanguages.toLang === "pt") {
 
       const response = await fetch(
         "https://fluentvoice-backend.onrender.com/api/fluentvoice/tts",
@@ -271,24 +283,17 @@ function attachEvents() {
       );
 
       const data = await response.json();
-
-      if (!data.audio) {
-        alert("Voice error");
-        return;
-      }
-
       const audio = new Audio("data:audio/mp3;base64," + data.audio);
       audio.play();
 
     } else {
 
       const utterance = new SpeechSynthesisUtterance(text);
-
-      if (toLang.value === "en") utterance.lang = "en-US";
-      if (toLang.value === "es") utterance.lang = "es-ES";
-
-      speechSynthesis.cancel();
+      if (selectedLanguages.toLang === "en") utterance.lang = "en-US";
+      if (selectedLanguages.toLang === "es") utterance.lang = "es-ES";
       speechSynthesis.speak(utterance);
     }
   };
+}
+
 }

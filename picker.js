@@ -1,67 +1,104 @@
-document.addEventListener("DOMContentLoaded", () => {
+const textInput = document.getElementById("textInput");
+const translateBtn = document.getElementById("translateBtn");
+const listenBtn = document.getElementById("listenBtn");
+const swapBtn = document.getElementById("swapBtn");
 
-  const textArea = document.getElementById("text");
-  const fromLang = document.getElementById("fromLang");
-  const toLang = document.getElementById("toLang");
-  const translateBtn = document.getElementById("translateBtn");
-  const listenBtn = document.getElementById("listenBtn");
-  const swapBtn = document.getElementById("swapBtn");
-  const closeBtn = document.getElementById("closeBtn");
+let selectedLanguages = {
+  fromLang: "en",
+  toLang: "pt"
+};
 
-  swapBtn.addEventListener("click", () => {
-    const temp = fromLang.value;
-    fromLang.value = toLang.value;
-    toLang.value = temp;
+/* DROPDOWN */
+document.querySelectorAll(".dropdown").forEach(dropdown => {
+
+  const selected = dropdown.querySelector(".dropdown-selected");
+  const target = dropdown.dataset.target;
+
+  selected.addEventListener("click", () => {
+    document.querySelectorAll(".dropdown").forEach(d => d.classList.remove("open"));
+    dropdown.classList.toggle("open");
   });
 
-  closeBtn.addEventListener("click", () => {
-    window.parent.document.getElementById("fluentvoice-panel").remove();
+  dropdown.querySelectorAll(".dropdown-item").forEach(item => {
+    item.addEventListener("click", () => {
+      selected.textContent = item.textContent;
+      selectedLanguages[target] = item.dataset.value;
+      dropdown.classList.remove("open");
+    });
   });
+});
 
-  translateBtn.addEventListener("click", async () => {
-    const text = textArea.value.trim();
-    if (!text) return;
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".dropdown")) {
+    document.querySelectorAll(".dropdown").forEach(d => d.classList.remove("open"));
+  }
+});
 
-    if (fromLang.value === toLang.value) return;
+/* SWAP */
+swapBtn.addEventListener("click", () => {
+  const temp = selectedLanguages.fromLang;
+  selectedLanguages.fromLang = selectedLanguages.toLang;
+  selectedLanguages.toLang = temp;
 
-    const res = await fetch(
-      "https://api.mymemory.translated.net/get?q=" +
-      encodeURIComponent(text) +
-      "&langpair=" + fromLang.value + "|" + toLang.value
+  const dropdowns = document.querySelectorAll(".dropdown");
+  dropdowns[0].querySelector(".dropdown-selected").textContent =
+    dropdowns[1].querySelector(".dropdown-selected").textContent;
+
+  dropdowns[1].querySelector(".dropdown-selected").textContent =
+    dropdowns[0].querySelector(".dropdown-selected").textContent;
+});
+
+/* TRANSLATE */
+translateBtn.addEventListener("click", async () => {
+
+  const text = textInput.value.trim();
+  if (!text) return;
+
+  const res = await fetch(
+    "https://api.mymemory.translated.net/get?q=" +
+    encodeURIComponent(text) +
+    "&langpair=" + selectedLanguages.fromLang + "|" + selectedLanguages.toLang
+  );
+
+  const data = await res.json();
+  textInput.value = data.responseData.translatedText;
+});
+
+/* LISTEN */
+listenBtn.addEventListener("click", async () => {
+
+  const text = textInput.value.trim();
+  if (!text) return;
+
+  if (selectedLanguages.toLang === "pt") {
+
+    const response = await fetch(
+      "https://SEU-DOMINIO.onrender.com/api/fluentvoice/tts",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      }
     );
 
-    const data = await res.json();
-    textArea.value = data.responseData.translatedText;
-  });
+    const data = await response.json();
 
-  listenBtn.addEventListener("click", async () => {
-    const text = textArea.value.trim();
-    if (!text) return;
-
-    // PT-BR usa voz neural backend
-    if (toLang.value === "pt") {
-      const response = await fetch(
-        "https://SEU-DOMINIO.onrender.com/api/fluentvoice/tts",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text })
-        }
-      );
-
-      const data = await response.json();
-      const audio = new Audio("data:audio/mp3;base64," + data.audio);
-      audio.play();
-
-    } else {
-      const utterance = new SpeechSynthesisUtterance(text);
-
-      if (toLang.value === "en") utterance.lang = "en-US";
-      if (toLang.value === "es") utterance.lang = "es-ES";
-
-      speechSynthesis.cancel();
-      speechSynthesis.speak(utterance);
+    if (!data.audio) {
+      alert("Voice error");
+      return;
     }
-  });
 
+    const audio = new Audio("data:audio/mp3;base64," + data.audio);
+    audio.play();
+
+  } else {
+
+    const utterance = new SpeechSynthesisUtterance(text);
+
+    if (selectedLanguages.toLang === "en") utterance.lang = "en-US";
+    if (selectedLanguages.toLang === "es") utterance.lang = "es-ES";
+
+    speechSynthesis.cancel();
+    speechSynthesis.speak(utterance);
+  }
 });
