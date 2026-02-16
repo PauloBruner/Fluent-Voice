@@ -3,7 +3,14 @@
   "name": "FluentVoice",
   "description": "Translate and practice pronunciation between English, Portuguese (Brazil), and Spanish.",
   "version": "2.0.0",
-  "permissions": ["activeTab", "scripting"],
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://*.onrender.com/*",
+    "https://api.mymemory.translated.net/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },
@@ -15,7 +22,7 @@
       "matches": ["<all_urls>"],
       "js": ["content.js"]
     }
-  ]
+  ],
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="picker.css">
+</head>
+<body>
+
+  <div class="container">
+
+    <div class="header">
+      FluentVoice
+      <button id="closeBtn">✕</button>
+    </div>
+
+    <textarea id="text" placeholder="Select text or type..."></textarea>
+
+    <div class="selectors">
+      <select id="fromLang">
+        <option value="en">English</option>
+        <option value="pt">Portuguese (Brazil)</option>
+        <option value="es">Spanish</option>
+      </select>
+
+      <button id="swapBtn">⇄</button>
+
+      <select id="toLang">
+        <option value="pt">Portuguese (Brazil)</option>
+        <option value="en">English</option>
+        <option value="es">Spanish</option>
+      </select>
+    </div>
+
+    <button id="translateBtn" class="primary">Translate</button>
+    <button id="listenBtn" class="secondary">Listen</button>
+
+  </div>
+
+  <script src="picker.js"></script>
+</body>
+</html>

@@ -1,3 +1,3 @@
 chrome.action.onClicked.addListener((tab) => {
-  chrome.tabs.sendMessage(tab.id, { toggle: true });
+  chrome.tabs.sendMessage(tab.id, { toggleFluentVoice: true });
 });
