@@ -1,17 +1,24 @@
-if (!window.fluentVoiceInjected) {
+if (window.fluentVoiceLoaded) {
+  // já carregado, não reexecuta
+} else {
 
-window.fluentVoiceInjected = true;
-let panel = null;
+window.fluentVoiceLoaded = true;
+}
 
 chrome.runtime.onMessage.addListener((request) => {
-  if (request.toggleFluentVoice) {
-    if (panel) {
-      panel.remove();
-      panel = null;
-    } else {
-      createPanel();
-    }
+
+  if (!request.toggleFluentVoice) return;
+
+  // Se já existe, fecha
+  const existing = document.getElementById("fluentvoice-panel");
+
+  if (existing) {
+    existing.remove();
+    return;
   }
+
+  // Se não existe, cria
+  createPanel();
 });
 
 function createPanel() {
@@ -66,6 +73,46 @@ function createPanel() {
   document.body.appendChild(panel);
   applyStyles();
   attachEvents();
+  createMiniButton();
+
+}
+
+function createMiniButton() {
+
+  if (document.getElementById("fv-mini")) return;
+
+  const mini = document.createElement("div");
+  mini.id = "fv-mini";
+  mini.innerHTML = "🎧";
+
+  mini.style.position = "fixed";
+  mini.style.bottom = "40px";
+  mini.style.right = "40px";
+  mini.style.width = "55px";
+  mini.style.height = "55px";
+  mini.style.background = "linear-gradient(135deg,#ff6a00,#ff8c1a)";
+  mini.style.borderRadius = "50%";
+  mini.style.display = "flex";
+  mini.style.alignItems = "center";
+  mini.style.justifyContent = "center";
+  mini.style.cursor = "pointer";
+  mini.style.boxShadow = "0 10px 25px rgba(0,0,0,0.4)";
+  mini.style.zIndex = "999998";
+  mini.style.fontSize = "22px";
+
+  mini.onclick = () => {
+
+    const existing = document.getElementById("fluentvoice-panel");
+
+    if (existing) {
+      existing.remove();
+    } else {
+      createPanel();
+    }
+
+  };
+
+  document.body.appendChild(mini);
 }
 
 function applyStyles() {
@@ -242,6 +289,7 @@ function attachEvents() {
   document.getElementById("fv-close").onclick = () => {
     panel.remove();
     panel = null;
+    createMiniButton();
   };
 
   document.getElementById("fv-swap").onclick = () => {
@@ -252,18 +300,29 @@ function attachEvents() {
 
   document.getElementById("fv-translate").onclick = async () => {
 
+    const btn = document.getElementById("fv-translate");
     const text = document.getElementById("fv-text").value.trim();
     if (!text) return;
 
-    const res = await fetch(
-      "https://api.mymemory.translated.net/get?q=" +
-      encodeURIComponent(text) +
-      "&langpair=" + selectedLanguages.fromLang + "|" + selectedLanguages.toLang
-    );
+    btn.classList.add("loading");
 
-    const data = await res.json();
-    document.getElementById("fv-text").value =
-      data.responseData.translatedText;
+    try {
+
+      const res = await fetch(
+        "https://api.mymemory.translated.net/get?q=" +
+        encodeURIComponent(text) +
+        "&langpair=" + selectedLanguages.fromLang + "|" + selectedLanguages.toLang
+      );
+
+      const data = await res.json();
+      document.getElementById("fv-text").value =
+        data.responseData.translatedText;
+
+    } catch (err) {
+      console.error(err);
+    }
+
+    btn.classList.remove("loading");
   };
 
   document.getElementById("fv-listen").onclick = async () => {
@@ -296,4 +355,3 @@ function attachEvents() {
   };
 }
 
-}
