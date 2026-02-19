@@ -11,22 +11,24 @@ chrome.action.onClicked.addListener(async (tab) => {
 
   try {
 
-    // Apenas envia mensagem
-    chrome.tabs.sendMessage(tab.id, {
+    // Tenta enviar mensagem primeiro
+    await chrome.tabs.sendMessage(tab.id, {
       toggleFluentVoice: true
     });
 
   } catch (err) {
 
-    // Se ainda não injetado, injeta UMA vez
+    // Se não existir listener, injeta
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       files: ["content.js"]
     });
 
-    chrome.tabs.sendMessage(tab.id, {
+    // Envia novamente
+    await chrome.tabs.sendMessage(tab.id, {
       toggleFluentVoice: true
     });
+
   }
 
 });
