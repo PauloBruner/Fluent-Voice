@@ -1,3 +1,11 @@
+chrome.runtime.onMessage.addListener((request) => {
+  if (request.openPrivacy) {
+    chrome.tabs.create({
+      url: "https://paulobruner.github.io/Fluent-Voice/privacy.html"
+    });
+  }
+});
+
 chrome.action.onClicked.addListener(async (tab) => {
 
   if (!tab.url ||
@@ -30,5 +38,4 @@ chrome.action.onClicked.addListener(async (tab) => {
     });
 
   }
-
 });

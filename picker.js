@@ -41,11 +41,12 @@ swapBtn.addEventListener("click", () => {
   selectedLanguages.toLang = temp;
 
   const dropdowns = document.querySelectorAll(".dropdown");
-  dropdowns[0].querySelector(".dropdown-selected").textContent =
-    dropdowns[1].querySelector(".dropdown-selected").textContent;
+  const fromLabel = dropdowns[0].querySelector(".dropdown-selected");
+  const toLabel = dropdowns[1].querySelector(".dropdown-selected");
 
-  dropdowns[1].querySelector(".dropdown-selected").textContent =
-    dropdowns[0].querySelector(".dropdown-selected").textContent;
+  const tempText = fromLabel.textContent;
+  fromLabel.textContent = toLabel.textContent;
+  toLabel.textContent = tempText;
 });
 
 /* TRANSLATE */
@@ -54,14 +55,39 @@ translateBtn.addEventListener("click", async () => {
   const text = textInput.value.trim();
   if (!text) return;
 
-  const res = await fetch(
-    "https://api.mymemory.translated.net/get?q=" +
-    encodeURIComponent(text) +
-    "&langpair=" + selectedLanguages.fromLang + "|" + selectedLanguages.toLang
-  );
+  try {
 
-  const data = await res.json();
-  textInput.value = data.responseData.translatedText;
+    const res = await fetch(
+      "https://fluentvoice-backend.onrender.com/api/fluentvoice/translate",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text,
+          fromLang: selectedLanguages.fromLang,
+          toLang: selectedLanguages.toLang
+        })
+      }
+    );
+
+    const data = await res.json().catch(() => ({}));
+
+    if (res.status === 429) {
+      alert("Daily translation limit reached. Please try again tomorrow.");
+      return;
+    }
+
+    if (!res.ok || !data.translatedText) {
+      alert("Translation error. Please try again later.");
+      return;
+    }
+
+    textInput.value = data.translatedText;
+
+  } catch (err) {
+    console.error(err);
+    alert("Translation error. Please check your connection and try again.");
+  }
 });
 
 /* LISTEN */
@@ -72,24 +98,36 @@ listenBtn.addEventListener("click", async () => {
 
   if (selectedLanguages.toLang === "pt") {
 
-    const response = await fetch(
-      "https://SEU-DOMINIO.onrender.com/api/fluentvoice/tts",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text })
+    try {
+
+      const response = await fetch(
+        "https://fluentvoice-backend.onrender.com/api/fluentvoice/tts",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text })
+        }
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (response.status === 429) {
+        alert("Daily voice limit reached. Please try again tomorrow.");
+        return;
       }
-    );
 
-    const data = await response.json();
+      if (!response.ok || !data.audio) {
+        alert("Voice error. Please try again later.");
+        return;
+      }
 
-    if (!data.audio) {
-      alert("Voice error");
-      return;
+      const audio = new Audio("data:audio/mp3;base64," + data.audio);
+      audio.play();
+
+    } catch (err) {
+      console.error(err);
+      alert("Voice error. Please check your connection and try again.");
     }
-
-    const audio = new Audio("data:audio/mp3;base64," + data.audio);
-    audio.play();
 
   } else {
 

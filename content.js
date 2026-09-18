@@ -1,9 +1,28 @@
-if (window.fluentVoiceLoaded) {
-  // já carregado, não reexecuta
-} else {
+(function () {
 
+// Evita registrar listeners/funções mais de uma vez por página
+if (window.fluentVoiceLoaded) return;
 window.fluentVoiceLoaded = true;
-}
+
+let panel = null;
+
+document.addEventListener("click", function (e) {
+  if (e.target.id === "fvPrivacyLink") {
+    chrome.runtime.sendMessage({ openPrivacy: true });
+  }
+});
+
+// Fecha os dropdowns ao clicar dentro do painel, fora de um dropdown.
+// Busca o painel no DOM a cada clique (sem depender da variável `panel`),
+// pois ele pode ser removido e recriado várias vezes.
+document.addEventListener("click", (e) => {
+  const currentPanel = document.querySelector("#fluentvoice-panel");
+  if (!currentPanel || !currentPanel.contains(e.target)) return;
+
+  if (!e.target.closest(".dropdown")) {
+    currentPanel.querySelectorAll(".dropdown").forEach(d => d.classList.remove("open"));
+  }
+});
 
 chrome.runtime.onMessage.addListener((request) => {
 
@@ -64,9 +83,7 @@ function createPanel() {
     </div>
 
     <div class="fv-footer">
-      <a href="https://SEU-SITE.com/privacy.html" target="_blank">
-        Privacy Policy
-      </a>
+      <span id="fvPrivacyLink">Privacy Policy</span>
     </div>
   `;
 
@@ -117,7 +134,10 @@ function createMiniButton() {
 
 function applyStyles() {
 
+  if (document.getElementById("fv-styles")) return;
+
   const style = document.createElement("style");
+  style.id = "fv-styles";
 
   style.textContent = `
     #fluentvoice-panel {
@@ -136,7 +156,7 @@ function applyStyles() {
       color: #ffffff;
     }
 
-    .fv-header {
+    #fluentvoice-panel .fv-header {
       text-align: center;
       font-weight: 700;
       font-size: 18px;
@@ -157,7 +177,7 @@ function applyStyles() {
       color: #ff6a00;
     }
 
-    textarea {
+    #fluentvoice-panel textarea {
       width: 100%;
       height: 170px;
       padding: 16px;
@@ -170,26 +190,26 @@ function applyStyles() {
       font-size: 15px;
     }
 
-    .fv-selectors {
+    #fluentvoice-panel .fv-selectors {
       display: flex;
       justify-content: space-between;
       margin-bottom: 20px;
     }
 
-    .dropdown {
+    #fluentvoice-panel .dropdown {
       position: relative;
       width: 42%;
       cursor: pointer;
     }
 
-    .dropdown-selected {
+    #fluentvoice-panel .dropdown-selected {
       padding: 10px 14px;
       border-radius: 14px;
       background: #2a2a2e;
       border: 1px solid rgba(255,255,255,0.08);
     }
 
-    .dropdown-list {
+    #fluentvoice-panel .dropdown-list {
       position: absolute;
       top: 110%;
       left: 0;
@@ -202,16 +222,16 @@ function applyStyles() {
       z-index: 999;
     }
 
-    .dropdown.open .dropdown-list {
+    #fluentvoice-panel .dropdown.open .dropdown-list {
       display: block;
     }
 
-    .dropdown-item {
+    #fluentvoice-panel .dropdown-item {
       padding: 10px 14px;
       transition: 0.2s ease;
     }
 
-    .dropdown-item:hover {
+    #fluentvoice-panel .dropdown-item:hover {
       background: #ff6a00;
     }
 
@@ -224,7 +244,7 @@ function applyStyles() {
       cursor: pointer;
     }
 
-    .fv-buttons button {
+    #fluentvoice-panel .fv-buttons button {
       width: 48%;
       padding: 12px;
       border-radius: 14px;
@@ -232,25 +252,25 @@ function applyStyles() {
       cursor: pointer;
     }
 
-    .primary {
+    #fluentvoice-panel .primary {
       background: linear-gradient(135deg,#ff6a00,#ff8c1a);
       color: white;
     }
 
-    .secondary {
+    #fluentvoice-panel .secondary {
       background: rgba(255,255,255,0.08);
       color: white;
     }
 
-    .fv-footer {
+    #fluentvoice-panel .fv-footer {
       text-align: center;
       font-size: 12px;
       margin-top: 10px;
     }
 
-    .fv-footer a {
+    #fvPrivacyLink {
       color: #ff6a00;
-      text-decoration: none;
+      cursor: pointer;
     }
   `;
 
@@ -261,13 +281,13 @@ function attachEvents() {
 
   let selectedLanguages = { fromLang: "en", toLang: "pt" };
 
-  document.querySelectorAll(".dropdown").forEach(dropdown => {
+  panel.querySelectorAll(".dropdown").forEach(dropdown => {
 
     const selected = dropdown.querySelector(".dropdown-selected");
     const target = dropdown.dataset.target;
 
     selected.addEventListener("click", () => {
-      document.querySelectorAll(".dropdown").forEach(d => d.classList.remove("open"));
+      panel.querySelectorAll(".dropdown").forEach(d => d.classList.remove("open"));
       dropdown.classList.toggle("open");
     });
 
@@ -280,12 +300,6 @@ function attachEvents() {
     });
   });
 
-  document.addEventListener("click", (e) => {
-    if (!e.target.closest(".dropdown")) {
-      document.querySelectorAll(".dropdown").forEach(d => d.classList.remove("open"));
-    }
-  });
-
   document.getElementById("fv-close").onclick = () => {
     panel.remove();
     panel = null;
@@ -296,6 +310,14 @@ function attachEvents() {
     const temp = selectedLanguages.fromLang;
     selectedLanguages.fromLang = selectedLanguages.toLang;
     selectedLanguages.toLang = temp;
+
+    const dropdowns = panel.querySelectorAll(".dropdown");
+    const fromLabel = dropdowns[0].querySelector(".dropdown-selected");
+    const toLabel = dropdowns[1].querySelector(".dropdown-selected");
+
+    const tempText = fromLabel.textContent;
+    fromLabel.textContent = toLabel.textContent;
+    toLabel.textContent = tempText;
   };
 
   document.getElementById("fv-translate").onclick = async () => {
@@ -309,20 +331,38 @@ function attachEvents() {
     try {
 
       const res = await fetch(
-        "https://api.mymemory.translated.net/get?q=" +
-        encodeURIComponent(text) +
-        "&langpair=" + selectedLanguages.fromLang + "|" + selectedLanguages.toLang
+        "https://fluentvoice-backend.onrender.com/api/fluentvoice/translate",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text,
+            fromLang: selectedLanguages.fromLang,
+            toLang: selectedLanguages.toLang
+          })
+        }
       );
 
-      const data = await res.json();
-      document.getElementById("fv-text").value =
-        data.responseData.translatedText;
+      const data = await res.json().catch(() => ({}));
+
+      if (res.status === 429) {
+        alert("Daily translation limit reached. Please try again tomorrow.");
+        return;
+      }
+
+      if (!res.ok || !data.translatedText) {
+        alert("Translation error. Please try again later.");
+        return;
+      }
+
+      document.getElementById("fv-text").value = data.translatedText;
 
     } catch (err) {
       console.error(err);
+      alert("Translation error. Please check your connection and try again.");
+    } finally {
+      btn.classList.remove("loading");
     }
-
-    btn.classList.remove("loading");
   };
 
   document.getElementById("fv-listen").onclick = async () => {
@@ -332,18 +372,36 @@ function attachEvents() {
 
     if (selectedLanguages.toLang === "pt") {
 
-      const response = await fetch(
-        "https://fluentvoice-backend.onrender.com/api/fluentvoice/tts",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text })
-        }
-      );
+      try {
 
-      const data = await response.json();
-      const audio = new Audio("data:audio/mp3;base64," + data.audio);
-      audio.play();
+        const response = await fetch(
+          "https://fluentvoice-backend.onrender.com/api/fluentvoice/tts",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text })
+          }
+        );
+
+        const data = await response.json().catch(() => ({}));
+
+        if (response.status === 429) {
+          alert("Daily voice limit reached. Please try again tomorrow.");
+          return;
+        }
+
+        if (!response.ok || !data.audio) {
+          alert("Voice error. Please try again later.");
+          return;
+        }
+
+        const audio = new Audio("data:audio/mp3;base64," + data.audio);
+        audio.play();
+
+      } catch (err) {
+        console.error(err);
+        alert("Voice error. Please check your connection and try again.");
+      }
 
     } else {
 
@@ -353,5 +411,7 @@ function attachEvents() {
       speechSynthesis.speak(utterance);
     }
   };
+
 }
 
+})();

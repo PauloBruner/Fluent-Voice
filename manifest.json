@@ -8,8 +8,7 @@
     "scripting"
   ],
   "host_permissions": [
-    "https://SEU-BACKEND.onrender.com/*",
-    "https://api.mymemory.translated.net/*"
+    "https://fluentvoice-backend.onrender.com/*"
   ],
   "background": {
     "service_worker": "background.js"
