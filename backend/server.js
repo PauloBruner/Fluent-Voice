@@ -38,7 +38,12 @@ const MAX_TRANSLATE_CHARS = 5000;
 const LANGUAGE_NAMES = {
   en: "English",
   pt: "Brazilian Portuguese",
-  es: "Spanish"
+  es: "Spanish",
+  de: "German",
+  el: "Greek",
+  he: "Hebrew",
+  zh: "Simplified Chinese",
+  ja: "Japanese"
 };
 
 const anthropic = ANTHROPIC_KEY

@@ -6,6 +6,17 @@ window.fluentVoiceLoaded = true;
 
 let panel = null;
 
+const SPEECH_LANGS = {
+  pt: "pt-BR",
+  en: "en-US",
+  es: "es-ES",
+  de: "de-DE",
+  el: "el-GR",
+  he: "he-IL",
+  zh: "zh-CN",
+  ja: "ja-JP"
+};
+
 document.addEventListener("click", function (e) {
   if (e.target.id === "fvPrivacyLink") {
     chrome.runtime.sendMessage({ openPrivacy: true });
@@ -61,6 +72,11 @@ function createPanel() {
           <div class="dropdown-item" data-value="en">English</div>
           <div class="dropdown-item" data-value="pt">Portuguese (Brazil)</div>
           <div class="dropdown-item" data-value="es">Spanish</div>
+          <div class="dropdown-item" data-value="de">German</div>
+          <div class="dropdown-item" data-value="el">Greek</div>
+          <div class="dropdown-item" data-value="he">Hebrew</div>
+          <div class="dropdown-item" data-value="zh">Chinese</div>
+          <div class="dropdown-item" data-value="ja">Japanese</div>
         </div>
       </div>
 
@@ -72,6 +88,11 @@ function createPanel() {
           <div class="dropdown-item" data-value="pt">Portuguese (Brazil)</div>
           <div class="dropdown-item" data-value="en">English</div>
           <div class="dropdown-item" data-value="es">Spanish</div>
+          <div class="dropdown-item" data-value="de">German</div>
+          <div class="dropdown-item" data-value="el">Greek</div>
+          <div class="dropdown-item" data-value="he">Hebrew</div>
+          <div class="dropdown-item" data-value="zh">Chinese</div>
+          <div class="dropdown-item" data-value="ja">Japanese</div>
         </div>
       </div>
 
@@ -365,51 +386,21 @@ function attachEvents() {
     }
   };
 
-  document.getElementById("fv-listen").onclick = async () => {
+  document.getElementById("fv-listen").onclick = () => {
 
     const text = document.getElementById("fv-text").value.trim();
     if (!text) return;
 
-    if (selectedLanguages.toLang === "pt") {
-
-      try {
-
-        const response = await fetch(
-          "https://fluentvoice-backend.onrender.com/api/fluentvoice/tts",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text })
-          }
-        );
-
-        const data = await response.json().catch(() => ({}));
-
-        if (response.status === 429) {
-          alert("Daily voice limit reached. Please try again tomorrow.");
-          return;
-        }
-
-        if (!response.ok || !data.audio) {
-          alert("Voice error. Please try again later.");
-          return;
-        }
-
-        const audio = new Audio("data:audio/mp3;base64," + data.audio);
-        audio.play();
-
-      } catch (err) {
-        console.error(err);
-        alert("Voice error. Please check your connection and try again.");
-      }
-
-    } else {
-
-      const utterance = new SpeechSynthesisUtterance(text);
-      if (selectedLanguages.toLang === "en") utterance.lang = "en-US";
-      if (selectedLanguages.toLang === "es") utterance.lang = "es-ES";
-      speechSynthesis.speak(utterance);
+    if (!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined") {
+      alert("Voice playback is not supported in this browser.");
+      return;
     }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = SPEECH_LANGS[selectedLanguages.toLang];
+
+    speechSynthesis.cancel();
+    speechSynthesis.speak(utterance);
   };
 
 }
